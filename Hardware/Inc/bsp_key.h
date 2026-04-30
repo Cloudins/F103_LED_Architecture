@@ -13,5 +13,6 @@ typedef enum {
 
 // 驱动层不处理消抖，只负责硬件初始化(若需)和事件抛出
 // 这里不需要向外暴露函数，依靠中断回调自动触发 Service 层
-
+/* 新增：提供给业务层查询引脚逻辑状态的接口 */
+uint8_t BSP_Key_IsPressed(BSP_Key_ID_t key_id);
 #endif /* __BSP_KEY_H */

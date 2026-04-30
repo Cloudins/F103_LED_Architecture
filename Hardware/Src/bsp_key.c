@@ -26,3 +26,29 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         Service_Key_EXTI_Notify((uint8_t)key_id);
     }
 }
+
+/**
+ * @brief  获取逻辑按键的当前物理状态
+ * @param  key_id: 按键枚举 ID
+ * @retval 1: 当前处于按下状态 | 0: 当前处于松开状态
+ */
+uint8_t BSP_Key_IsPressed(BSP_Key_ID_t key_id)
+{
+    switch (key_id)
+    {
+        case BSP_KEY_WKUP:
+            // 野火指南者的 WKUP 是高电平有效
+            return (HAL_GPIO_ReadPin(GPIOA, KEY_WKUP_Pin) == GPIO_PIN_SET) ? 1 : 0;
+
+        case BSP_KEY_2:
+            // 假设 KEY2 是外部上拉，低电平有效
+            return (HAL_GPIO_ReadPin(KEY_2_GPIO_Port, KEY_2_Pin) == GPIO_PIN_RESET) ? 1 : 0;
+
+        case BSP_KEY_EXTERNAL:
+            // 假设外部按键也是低电平有效
+            return (HAL_GPIO_ReadPin(KEY_EXTERNAL_GPIO_Port, KEY_EXTERNAL_Pin) == GPIO_PIN_RESET) ? 1 : 0;
+
+        default:
+            return 0;
+    }
+}

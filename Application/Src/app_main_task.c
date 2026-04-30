@@ -6,6 +6,8 @@
 #include "bsp_uart.h"        // 引入串口初始化
 #include "service_cli.h"     // 引入命令行服务
 #include "bsp_delay.h"
+#include "bsp_key.h"
+#include <stdio.h>
 
 /**
  * @brief   应用层主任务初始化入口
@@ -14,9 +16,12 @@
 void App_Main_Init(void)
 {
     /*======================= DWT实验 ============================*/
-    BSP_Delay_Init(); // 第一步：必须最先开启 DWT，否则后续剖析会出错
-    BSP_UART_Init();
+    BSP_Delay_Init(); // 初始化 DWT 内核计数器
+    BSP_UART_Init();  // 开启串口接收中断
 
+    printf("\r\n=== System Boot Success ===\r\n");
+    printf("Architecture: 4-Layer | Toolchain: GCC\r\n");
+    printf("Type 'profile' to test DWT...\r\n");
 
     // BSP_UART_Init(); // 启动串口接收中断
     // printf("\r\n================================\r\n");
@@ -37,7 +42,7 @@ void App_Main_Init(void)
 void App_Main_Routine(void)
 {
     // 获取当前系统的毫秒级时间戳
-    uint32_t current_tick = HAL_GetTick();
+    // uint32_t current_tick = HAL_GetTick();
 
     // --- 任务调度区 ---
 
@@ -77,4 +82,29 @@ void App_Main_Routine(void)
     // 运行命令行解析任务 (完全非阻塞，没数据瞬间退出)
     // Service_CLI_Task();
 
+    /*======================= DWT实验 ============================*/
+    while(1)
+    {
+        uint32_t current_tick = HAL_GetTick(); // 应用层统一获取时间
+        // 1. 驱动业务层轮询运转 (非阻塞)
+        Service_CLI_Task();     // 处理串口数据包与指令
+        Service_Event_Task(current_tick);   // 处理按键消抖状态机
+
+        // 2. 消费事件邮箱
+        uint8_t event = Service_Event_ReadMailbox();
+
+        // 当识别到 WKUP 按键被确实按下时
+        if (event == BSP_KEY_EXTERNAL)
+        {
+            printf("[App] WKUP Key valid! Simulating 480us pulse...\r\n");
+
+            // 使用蓝灯模拟信号线电平
+            BSP_LED_SetState(BSP_LED_COLOR_BLUE, BSP_LED_STATE_ON);
+            BSP_Delay_us(480); // 绝对精确的微秒死等
+            BSP_LED_SetState(BSP_LED_COLOR_BLUE, BSP_LED_STATE_OFF);
+
+            printf("[App] 480us Pulse generated.\r\n");
+        }
+    }
+    /*======================= DWT实验 END ============================*/
 }
